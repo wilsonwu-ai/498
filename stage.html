@@ -19,6 +19,8 @@
   .qr { background: #fff; border-radius: 1.2vw; padding: 1.2vw; width: min(100%, 52vh); aspect-ratio: 1; }
   .qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
   .hint { color: var(--muted); }
+  .total { color: var(--muted); }
+  .total b { color: var(--ink); font-size: 1.6em; font-weight: 900; font-variant-numeric: tabular-nums; }
   .right { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 1.4vw; min-width: 0; min-height: 0; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; }
   .col { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: 1.4vw 1.6vw; min-width: 0; }
@@ -58,7 +60,7 @@
     <h1>Your phone is an<br>MBPP grader</h1>
     <div class="qr"><img src="qr.svg" alt="QR code for the grader page"></div>
     <div class="url">wilsonwu-ai.github.io/498</div>
-    <div class="hint">Scan it. Your phone runs two benchmark problems with its own math library and grades itself against the answer key.</div>
+    <div class="total" id="total">Scan it. Your phone runs two benchmark problems with its own math library and grades itself against the answer key.</div>
   </section>
 
   <section class="right">
@@ -124,6 +126,9 @@
     var all = Object.keys(reports).map(function (k) { return reports[k]; });
     var fail = all.filter(function (r) { return !r.ok; }), pass = all.filter(function (r) { return r.ok; });
     $('nFail').textContent = fail.length; $('nPass').textContent = pass.length;
+    $('total').innerHTML = all.length
+      ? '<b>' + all.length + '</b> phone' + (all.length === 1 ? ' has' : 's have') + ' graded so far. Scan to join.'
+      : 'Scan it. Your phone runs two benchmark problems with its own math library and grades itself against the answer key.';
     function chips(list) {
       var by = {};
       list.forEach(function (r) { var k = r.d === 'Mac' || r.d === 'Windows' || r.d === 'Linux' ? r.d + ' ' + r.b : r.d; by[k] = (by[k] || 0) + 1; });
@@ -244,6 +249,8 @@
     var k = e.key.toLowerCase();
     if (k === 'r') {
       try { localStorage.setItem('mbpp498since', String(Math.floor(Date.now() / 1000))); } catch (x) {}
+      // Tell the phones where the count starts, so their "you are one of N" matches this screen.
+      fetch('https://ntfy.sh/' + TOPIC, { method: 'POST', body: JSON.stringify({ v: 1, kind: 'reset' }) }).catch(function () {});
       reports = {}; render(); connect();
     } else if (k === 'd') {
       var o = $('overlay'); o.style.display = o.style.display === 'flex' ? 'none' : 'flex';

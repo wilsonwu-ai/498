@@ -37,6 +37,10 @@
   .foot { color: var(--muted); font-size: 13px; margin-top: 18px; }
   .foot a { color: var(--key); }
   .status { font-size: 13px; color: var(--muted); text-align: center; }
+  .count { text-align: center; margin: 4px 0 0; font-size: 16px; }
+  .count b { font-size: 30px; font-weight: 900; display: block; }
+  .count .f { color: var(--fail); font-weight: 700; } .count .p { color: var(--pass); font-weight: 700; }
+  .count button { background: none; border: 0; color: var(--key); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 6px; }
   details { margin-top: 8px; } summary { cursor: pointer; color: var(--key); }
 </style>
 </head>
@@ -65,6 +69,7 @@
 
   <p id="ask" class="ask"></p>
   <p id="status" class="status"></p>
+  <div id="count" class="count" hidden></div>
 
   <div class="card">
     <h2>This device</h2>
@@ -176,11 +181,46 @@
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         $('status').textContent = 'Counted on the big screen.';
+        // Only a phone whose report went through cleanly asks for the count, once:
+        // on shared venue wifi the relay's per-IP budget belongs to the tally first.
+        if (attempt <= 1) setTimeout(function () { showCount(payload); }, 1500);
       })
       .catch(function () {
-        if (attempt < 4) setTimeout(function () { report(payload, attempt + 1); }, [1000, 3000, 6000, 10000][attempt]);
+        // The relay allows a burst of 60 requests per IP, then one every 5 s. Spread
+        // retries with jitter over about a minute so a crowded room still gets counted.
+        var waits = [1500, 4000, 8000, 12000, 16000, 20000];
+        if (attempt < waits.length) setTimeout(function () { report(payload, attempt + 1); }, waits[attempt] + Math.random() * 3000);
         else $('status').textContent = 'Could not reach the tally. Your result above still counts: raise your hand.';
       });
+  }
+
+  // One read of the relay: count distinct devices since the stage's last reset marker.
+  function showCount(mine) {
+    fetch(ENDPOINT + '/json?poll=1&since=12h')
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function (text) {
+        var devices = {};
+        text.split('\n').forEach(function (line) {
+          var d, m;
+          try { d = JSON.parse(line); m = JSON.parse(d.message); } catch (e) { return; }
+          if (!m || m.v !== 1) return;
+          if (m.kind === 'reset') { devices = {}; return; }
+          if (typeof m.id !== 'string' || !/^[a-z0-9]{4,16}$/.test(m.id) || typeof m.ok !== 'boolean') return;
+          devices[m.id] = m;
+        });
+        devices[mine.id] = mine;                     // our own report may still be in flight
+        var all = Object.keys(devices).map(function (k) { return devices[k]; });
+        var fail = all.filter(function (x) { return !x.ok; }).length;
+        var same = all.filter(function (x) { return x.fp && x.fp === mine.fp && x.id !== mine.id; }).length;
+        var el = $('count');
+        el.innerHTML = 'You are one of<b>' + all.length + ' phone' + (all.length === 1 ? '' : 's') + ' graded so far</b>' +
+          '<span class="f">' + fail + ' FAIL</span> &middot; <span class="p">' + (all.length - fail) + ' PASS</span>' +
+          (same ? ' &middot; ' + same + (same === 1 ? ' shares' : ' share') + ' your math library' : '') +
+          '<br><button type="button" id="recount">Refresh the count</button>';
+        el.hidden = false;
+        $('recount').onclick = function () { showCount(mine); };
+      })
+      .catch(function () { /* the count is a bonus; the verdict above is what matters */ });
   }
 
   var r = MBPP.run();
