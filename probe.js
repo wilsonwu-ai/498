@@ -62,6 +62,37 @@
     return Math.round(Math.abs(a - b) / Math.pow(2, e - 52));
   }
 
+  // Math-library fingerprint. Frozen spec shared with smoleval's fingerprint.py:
+  // 31 libm probes, each result's IEEE-754 bytes (big-endian) concatenated in order,
+  // hashed with FNV-1a 32-bit. Same math library => same fingerprint, in any language.
+  var PROBES = [["tan",[0.5235987755982988]],["sin",[23.5]],["cos",[23.5]],["sin",[25.5]],["cos",[25.5]],
+    ["cos",[-2.0]],["acos",[0.30963630613233006]],["sin",[1.0]],["cos",[1.0]],["tan",[1.0]],["sin",[1e22]],
+    ["asin",[0.5]],["atan",[0.5]],["atan2",[1.0,3.0]],["exp",[1.0]],["exp",[0.5]],["log",[10.0]],["log10",[2.0]],
+    ["log2",[10.0]],["sinh",[1.0]],["cosh",[1.0]],["tanh",[0.5]],["expm1",[1e-5]],["log1p",[1e-5]],
+    ["hypot",[3.0,4.1]],["sin",[0.7]],["cos",[0.7]],["tan",[0.7]],["acos",[0.3]],["asin",[0.3]],["atan",[3.3]]];
+  // Measured on one Mac, 2026-09-22 (the phones in the room may add new ones).
+  var KNOWN = {
+    '260cb0bf': "Apple libm, arm64 (same as Wilson's Mac Python)",
+    'a6233f19': "Apple libm, Intel build (Python under Rosetta)",
+    '44543bc6': "V8's fdlibm (Chrome, Android, node)",
+    '1853a0cf': "musl (Python compiled to WebAssembly)"
+  };
+  function fingerprint() {
+    var h = 0x811c9dc5, dv = new DataView(new ArrayBuffer(8)), probes = [];
+    for (var i = 0; i < PROBES.length; i++) {
+      var v = Math[PROBES[i][0]].apply(null, PROBES[i][1]), hex = '';
+      dv.setFloat64(0, v);
+      for (var j = 0; j < 8; j++) {
+        var byte = dv.getUint8(j);
+        h = Math.imul(h ^ byte, 0x01000193) >>> 0;
+        hex += (byte < 16 ? '0' : '') + byte.toString(16);
+      }
+      probes.push(hex);
+    }
+    var fp = ('0000000' + h.toString(16)).slice(-8);
+    return { fp: fp, known: KNOWN[fp] || null, probes: probes };
+  }
+
   function run() {
     var t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     var r180 = KEYS.k180.map(function (c) {
@@ -88,7 +119,7 @@
     };
   }
 
-  var api = { run: run, distance_lat_long: distance_lat_long, calculate_polygons: calculate_polygons, KEYS: KEYS };
+  var api = { run: run, fingerprint: fingerprint, KNOWN: KNOWN, distance_lat_long: distance_lat_long, calculate_polygons: calculate_polygons, KEYS: KEYS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.MBPP = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

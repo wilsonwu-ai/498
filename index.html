@@ -71,13 +71,15 @@
     <div class="row"><span class="lbl">device</span><span id="dev">&hellip;</span></div>
     <div class="row"><span class="lbl">browser engine</span><span id="eng">&hellip;</span></div>
     <div class="row"><span class="lbl">tan(&pi;/6)</span><span id="tan" class="mono">&hellip;</span></div>
+    <div class="row"><span class="lbl">math library fingerprint</span><span id="fp" class="mono big" style="font-size:24px">&hellip;</span></div>
+    <p id="fpWhat" style="margin:4px 0 0;color:var(--muted);font-size:14px;text-align:right"></p>
     <details>
       <summary>What just happened?</summary>
       <p>Your browser ran a line-for-line copy of the benchmark's own reference solutions, then compared the result to the benchmark's answer key with exact equality, the way the benchmark's tests do. Functions like sin, cos and tan are computed by a math library, and different libraries round the last of about 17 digits differently. When a test demands exact equality, one step in that last digit turns a pass into a fail.</p>
     </details>
   </div>
 
-  <p class="foot">Code: <a href="https://github.com/wilsonwu-ai/498">github.com/wilsonwu-ai/498</a>. Nothing personal is collected: only the pass/fail result, device type and browser family, for the live tally on stage.</p>
+  <p class="foot">Code: <a href="https://github.com/wilsonwu-ai/498">github.com/wilsonwu-ai/498</a>. Nothing personal is collected. For the live tally this page sends the pass/fail result, hexagon count, math library fingerprint, device type and browser family, and records the same as one anonymous PostHog analytics event. No cookies. Add <code>?tally=off</code> to send nothing.</p>
 
 <script src="probe.js"></script>
 <script>
@@ -208,12 +210,47 @@
   $('tan').innerHTML = diffMark(r.tan_pi_6, '0.5773502691896257', r.libm !== 'apple');
   $('ask').textContent = ok ? 'Keep your hand down. You passed.' : 'Raise your hand if your screen is red.';
 
+  var fpr = MBPP.fingerprint();
+  $('fp').textContent = fpr.fp;
+  $('fpWhat').textContent = fpr.known || 'A math library not seen before tonight.';
+
   var params = new URLSearchParams(location.search);
   if (params.get('tally') !== 'off') {
     report({
-      v: 1, id: deviceId(), d: dev, b: br, l: r.libm,
+      v: 1, id: deviceId(), d: dev, b: br, l: r.libm, fp: fpr.fp,
       p180: r.t180.passed, p493: r.t493.passed, hx: mineGrid.length, ok: ok
     });
+    posthogEvent({
+      verdict: ok ? 'PASS' : 'FAIL', task180_passed: r.t180.passed, task493_passed: r.t493.passed,
+      hexagons: mineGrid.length, libm: r.libm, libm_fingerprint: fpr.fp, device_family: dev, browser_family: br
+    });
+  }
+
+  // One anonymous analytics event, loaded after the verdict is on screen so it can never
+  // slow the page. posthog-js adds $os, $browser and $device_type itself.
+  // No autocapture, no pageviews, no session recording, no cookies (memory persistence).
+  function posthogEvent(props) {
+    try {
+      var ph = window.posthog = window.posthog || [];
+      if (ph.__SV) return;
+      ph._i = [];
+      ph.init = function (k, c, n) { ph._i.push([k, c, n]); };
+      ['capture', 'register'].forEach(function (m) {
+        ph[m] = function () { ph.push([m].concat(Array.prototype.slice.call(arguments))); };
+      });
+      ph.__SV = 1;
+      ph.init('phc_AvH7erzQLVJyLGQKcWAu4A9obaQXmEghqQ4cky3cpm6d', {
+        api_host: 'https://us.i.posthog.com',
+        autocapture: false, capture_pageview: false, capture_pageleave: false,
+        disable_session_recording: true, disable_surveys: true,
+        persistence: 'memory', person_profiles: 'identified_only'
+      });
+      ph.capture('mbpp_graded', props);
+      var sc = document.createElement('script');
+      sc.async = true; sc.crossOrigin = 'anonymous';
+      sc.src = 'https://us-assets.i.posthog.com/static/array.js';
+      document.head.appendChild(sc);
+    } catch (e) { /* analytics must never break the demo */ }
   }
 })();
 </script>

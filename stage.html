@@ -19,7 +19,7 @@
   .qr { background: #fff; border-radius: 1.2vw; padding: 1.2vw; width: min(100%, 52vh); aspect-ratio: 1; }
   .qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
   .hint { color: var(--muted); }
-  .right { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1.4vw; min-width: 0; min-height: 0; }
+  .right { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 1.4vw; min-width: 0; min-height: 0; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; }
   .col { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: 1.4vw 1.6vw; min-width: 0; }
   .col.fail { border-color: rgba(255,82,82,.55); } .col.pass { border-color: rgba(61,220,132,.55); }
@@ -30,6 +30,10 @@
   .chips { display: flex; flex-wrap: wrap; gap: .6vw; margin-top: .8vw; min-height: 2.2em; }
   .chip { background: #1e2430; border-radius: 999px; padding: .15em .7em; font-weight: 650; white-space: nowrap; }
   .sub { color: var(--muted); margin-top: .6vw; }
+  .fps { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: .8vw 1.4vw; display: flex; gap: 1.2vw; align-items: center; flex-wrap: wrap; min-height: 3.2em; }
+  .fps .h { font-weight: 800; color: var(--muted); }
+  .fp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; padding: .1em .55em; border-radius: .5em; }
+  .fp small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-weight: 600; color: var(--ink); margin-left: .4em; }
   .grids { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; min-height: 0; }
   .g { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: 1vw 1.2vw; display: flex; flex-direction: column; min-height: 0; }
   .g .t { font-weight: 800; display: flex; justify-content: space-between; gap: 1em; }
@@ -73,6 +77,8 @@
       </div>
     </div>
 
+    <div class="fps" id="fps"><span class="h">Math libraries in this room</span><span id="fpList" class="hint">waiting for phones</span></div>
+
     <div class="grids">
       <div class="g">
         <div class="t"><span>Answer key</span><span id="hKey" style="color:var(--key)"></span></div>
@@ -110,6 +116,7 @@
     return m && m.v === 1 && typeof m.id === 'string' && /^[a-z0-9]{4,16}$/.test(m.id) &&
       DEVICES.indexOf(m.d) >= 0 && LIBMS.indexOf(m.l) >= 0 && typeof m.b === 'string' && m.b.length <= 24 &&
       int(m.p180, 0, 3) && int(m.p493, 0, 3) && int(m.hx, 0, 40) && typeof m.ok === 'boolean' &&
+      (m.fp === undefined || (typeof m.fp === 'string' && /^[0-9a-f]{8}$/.test(m.fp))) &&
       m.ok === (m.p180 === 3 && m.p493 === 3);
   }
 
@@ -128,6 +135,20 @@
     var passApple = pass.filter(function (r) { return r.l === 'apple'; }).length;
     $('sFail').textContent = fail.length ? failApple + ' of ' + fail.length + " use Apple's math library" : '';
     $('sPass').textContent = pass.length ? (pass.length - passApple) + ' of ' + pass.length + ' use a different math library' : '';
+    // Group devices by math-library fingerprint: same fingerprint, same math library.
+    var fps = {};
+    all.forEach(function (r) {
+      if (!r.fp) return;
+      var g = fps[r.fp] = fps[r.fp] || { n: 0, ok: r.ok, dev: {} };
+      g.n++; g.dev[r.d] = (g.dev[r.d] || 0) + 1;
+    });
+    var keys = Object.keys(fps).sort(function (a, b) { return fps[b].n - fps[a].n; });
+    $('fpList').innerHTML = keys.length ? keys.map(function (k) {
+      var g = fps[k], devs = Object.keys(g.dev).map(function (d) { return esc(d) + ' ' + g.dev[d]; }).join(', ');
+      return '<span class="fp" style="background:' + (g.ok ? 'rgba(61,220,132,.18);color:var(--pass)' : 'rgba(255,82,82,.18);color:var(--fail)') +
+             '">' + esc(k) + '<small>' + devs + '</small></span>';
+    }).join('') : 'waiting for phones';
+    $('fpList').className = keys.length ? '' : 'hint';
     var hx = {};
     all.forEach(function (r) { hx[r.hx] = (hx[r.hx] || 0) + 1; });
     $('hexStat').textContent = Object.keys(hx).sort().map(function (k) { return hx[k] + ' drew ' + k + ' hexagons'; }).join(' · ');
@@ -215,7 +236,7 @@
       if (n++ > 70) return;
       var r = Math.random() * 100, i = 0; while (r > w[i]) { r -= w[i]; i++; }
       var t = mix[i], ok = t[2] !== 'apple';
-      ingest({ v: 1, id: 'sim' + n, d: t[0], b: t[1], l: t[2], p180: ok ? 3 : 1, p493: ok ? 3 : 0, hx: t[3], ok: ok });
+      ingest({ v: 1, id: 'sim' + n, d: t[0], b: t[1], l: t[2], fp: ok ? '44543bc6' : '260cb0bf', p180: ok ? 3 : 1, p493: ok ? 3 : 0, hx: t[3], ok: ok });
     }, 350);
   }
 
