@@ -70,12 +70,12 @@
     ["asin",[0.5]],["atan",[0.5]],["atan2",[1.0,3.0]],["exp",[1.0]],["exp",[0.5]],["log",[10.0]],["log10",[2.0]],
     ["log2",[10.0]],["sinh",[1.0]],["cosh",[1.0]],["tanh",[0.5]],["expm1",[1e-5]],["log1p",[1e-5]],
     ["hypot",[3.0,4.1]],["sin",[0.7]],["cos",[0.7]],["tan",[0.7]],["acos",[0.3]],["asin",[0.3]],["atan",[3.3]]];
-  // Measured on one Mac, 2026-09-22 (the phones in the room may add new ones).
+  // Measured 2026-09-22/23 on one Mac, plus a GitHub Actions Ubuntu runner for glibc.
   var KNOWN = {
     '260cb0bf': "Apple libm, arm64 (same as Wilson's Mac Python)",
     'a6233f19': "Apple libm, Intel build (Python under Rosetta)",
     '44543bc6': "V8's fdlibm (Chrome, Android, node)",
-    '1853a0cf': "musl (Python compiled to WebAssembly)"
+    '1853a0cf': "glibc on Linux (same as musl in WebAssembly Python)"
   };
   function fingerprint() {
     var h = 0x811c9dc5, dv = new DataView(new ArrayBuffer(8)), probes = [];

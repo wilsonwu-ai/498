@@ -242,7 +242,7 @@
       ph.init('phc_AvH7erzQLVJyLGQKcWAu4A9obaQXmEghqQ4cky3cpm6d', {
         api_host: 'https://us.i.posthog.com',
         autocapture: false, capture_pageview: false, capture_pageleave: false,
-        disable_session_recording: true, disable_surveys: true,
+        disable_session_recording: true, disable_surveys: true, capture_exceptions: false,
         persistence: 'memory', person_profiles: 'identified_only'
       });
       ph.capture('mbpp_graded', props);

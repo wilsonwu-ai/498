@@ -41,12 +41,33 @@ MBPP's tests compare floats with `==`, so one unit in the last place turns PASS 
 | `diagram.svg` | One diagram: same code, three math libraries, three verdicts. |
 | `stage/demo.sh` | Terminal beats for the talk (`bash stage/demo.sh all`). Needs [smoleval](https://github.com/wilsonwu-ai/smoleval) and its dataset cache for beat 1. |
 
+## Math-library fingerprint
+
+`probe.js` asks the device's math library 31 questions (`tan(pi/6)`, `acos(0.3)`, `hypot(3, 4.1)`...),
+concatenates the exact IEEE-754 bits of every answer and hashes them with FNV-1a into 8 hex characters.
+Same library, same fingerprint, whatever language is asking. The spec is shared byte for byte with
+`smoleval fingerprint` ([smoleval, branch env-fingerprint](https://github.com/wilsonwu-ai/smoleval/tree/env-fingerprint)).
+
+| Fingerprint | Library | Seen in |
+|---|---|---|
+| `260cb0bf` | Apple libm, arm64 | Python on an Apple silicon Mac, Safari's JavaScriptCore, bun |
+| `a6233f19` | Apple libm, Intel build | x86 Python under Rosetta (differs from arm64 on 2 of 31 probes) |
+| `44543bc6` | V8's fdlibm port | Chrome, Android, node |
+| `1853a0cf` | glibc and musl | Linux (GitHub Actions ubuntu-latest, glibc 2.39), Pyodide |
+
+`stage/linux-replay/` is the artifact of a real Linux replay: [GitHub Actions run 35866557239](https://github.com/wilsonwu-ai/smoleval/actions/runs/35866557239)
+(ubuntu-latest, CPython 3.12.14, glibc 2.39): HumanEval 164/164, MBPP 500/500, fingerprint `1853a0cf`.
+`smoleval compare` against a Mac replay reports `ENVIRONMENT CHANGED` (8 of 31 probes differ),
+lists Mbpp/180 and Mbpp/493 as flipped, and exits 3 instead of attributing the drop to the model.
+
 ## The live tally and privacy
 
 Each phone posts one small JSON message to a public [ntfy.sh](https://ntfy.sh) topic:
-pass/fail per task, hexagon count, device family (iPhone, Android, Mac...), browser family,
-and a random per-browser id used to count each device once. No names, no IP logging by this
-app, no analytics, no cookies. Add `?tally=off` to the URL to skip it entirely. The stage view
+pass/fail per task, hexagon count, math-library fingerprint, device family (iPhone, Android,
+Mac...), browser family, and a random per-browser id used to count each device once. It also
+records the same fields as one anonymous PostHog event (no autocapture, no pageviews, no
+session recording, memory-only persistence, so no cookies). No names. Add `?tally=off` to the
+URL to send nothing. The stage view
 only counts messages that match the expected shape.
 
 ## Credits
