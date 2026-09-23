@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Running-code beats for the talk, in talk order.
-#   bash stage/demo.sh all     Enter advances, screen clears between beats
+#   bash stage/demo.sh talk    the talk order: 1, 2, (switch to the stage view), 5, 7, 8
+#   bash stage/demo.sh all     every beat 1-8, for rehearsal
 #   bash stage/demo.sh <n>     run one beat
 #
 #   1  harness: replay MBPP's own answer key through smoleval        -> 498/500
@@ -35,9 +36,14 @@ beat() {
   esac
 }
 
-if [ "${1:-}" = "all" ]; then
-  for n in 1 2 3 4 5 6 7 8; do
-    clear; printf '\n  \033[36m[beat %s]\033[0m  ' "$n"; sed -n "$((5 + n))p" "$0" | sed 's/^#   [0-9]  //'
+if [ "${1:-}" = "all" ] || [ "${1:-}" = "talk" ]; then
+  SEQ="1 2 3 4 5 6 7 8"; [ "$1" = "talk" ] && SEQ="1 2 STAGE 5 7 8"
+  for n in $SEQ; do
+    if [ "$n" = "STAGE" ]; then
+      clear; printf '\n\n  \033[36mCmd-Tab to Safari: the stage view. Phones, then come back.\033[0m\n\n'
+      read -r -p "  (Enter when you are back) " _; continue
+    fi
+    clear; printf '\n  \033[36m[beat %s]\033[0m  ' "$n"; grep -m1 "^#   $n  " "$0" | sed -e 's/^#   [0-9]  //' -e 's/ *->.*//'
     beat "$n"
     read -r -p "  (Enter for next beat) " _
   done
