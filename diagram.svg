@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 1920 1080" role="img" aria-labelledby="mbpp-split-title mbpp-split-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title id="mbpp-split-title">Same code, three math libraries</title>
+<desc id="mbpp-split-desc">MBPP task 180 run through Apple's math library gives 12179.372041317427, one ulp below the answer key, so exact equality fails; Linux glibc and Chrome's V8 both give 12179.372041317429 and pass. iPhones use Apple's library, Android uses V8.</desc>
+<style>
+.dg{--dg-paper:#EEF1F4;--dg-box:#FFFFFF;--dg-ink:#111A23;--dg-muted:#4F5D6C;--dg-rule:#C3CBD3;--dg-fail:#C9361F;--dg-fail-tint:#FBE6E1;--dg-pass:#17774A;--dg-pass-tint:#E1F1E8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dg,.dg:root{--dg-paper:#0E151C;--dg-box:#17212B;--dg-ink:#E8EEF4;--dg-muted:#A3B1BF;--dg-rule:#34424F;--dg-fail:#FF6A55;--dg-fail-tint:#3B1A15;--dg-pass:#4CC98A;--dg-pass-tint:#12301F}}
+:root[data-theme="dark"] .dg{--dg-paper:#0E151C;--dg-box:#17212B;--dg-ink:#E8EEF4;--dg-muted:#A3B1BF;--dg-rule:#34424F;--dg-fail:#FF6A55;--dg-fail-tint:#3B1A15;--dg-pass:#4CC98A;--dg-pass-tint:#12301F}
+.dg .bg{fill:var(--dg-paper)}
+.dg .box{fill:var(--dg-box);stroke:var(--dg-ink);stroke-width:3}
+.dg .box-fail{fill:var(--dg-fail-tint);stroke:var(--dg-fail);stroke-width:4}
+.dg .box-pass{fill:var(--dg-pass-tint);stroke:var(--dg-pass);stroke-width:3}
+.dg .wire{fill:none;stroke:var(--dg-muted);stroke-width:4}
+.dg .head{fill:var(--dg-muted)}
+.dg .hair{stroke:var(--dg-rule);stroke-width:2}
+.dg .t-title{fill:var(--dg-ink);font-size:56px;font-weight:700;letter-spacing:-0.01em}
+.dg .t-sub{fill:var(--dg-muted);font-size:32px}
+.dg .t-eyebrow{fill:var(--dg-muted);font-size:32px;letter-spacing:0.12em;font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace}
+.dg .t-name{fill:var(--dg-ink);font-size:40px;font-weight:700}
+.dg .t-small{fill:var(--dg-muted);font-size:32px}
+.dg .t-mono{fill:var(--dg-ink);font-size:40px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace}
+.dg .t-code{fill:var(--dg-muted);font-size:32px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace}
+.dg .d-fail{fill:var(--dg-fail);font-weight:800}
+.dg .d-pass{fill:var(--dg-pass);font-weight:800}
+.dg .v-fail{fill:var(--dg-fail);font-size:56px;font-weight:800;letter-spacing:0.04em}
+.dg .v-pass{fill:var(--dg-pass);font-size:56px;font-weight:800;letter-spacing:0.04em}
+</style>
+<defs>
+<marker id="dg-arrow" markerUnits="userSpaceOnUse" markerWidth="24" markerHeight="20" refX="24" refY="10" orient="auto"><polygon class="head" points="0 0, 24 10, 0 20"/></marker>
+</defs>
+<rect class="bg" width="1920" height="1080"/>
+<text class="t-title" x="80" y="116">Same code, three math libraries</text>
+<text class="t-sub" x="80" y="176">MBPP task 180 · answer key 12179.372041317429 · graded with exact ==</text>
+<text class="t-eyebrow" x="480" y="284">MATH LIBRARY</text>
+<text class="t-eyebrow" x="1000" y="284">RESULT, KM</text>
+<text class="t-eyebrow" x="1560" y="284">VERDICT</text>
+<path class="wire" d="M400,580 H424 Q440,580 440,564 V424 Q440,408 456,408 H480" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M400,624 H480" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M400,668 H424 Q440,668 440,684 V824 Q440,840 456,840 H480" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M920,408 H1000" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M920,624 H1000" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M920,840 H1000" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M1480,408 H1560" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M1480,624 H1560" marker-end="url(#dg-arrow)"/>
+<path class="wire" d="M1480,840 H1560" marker-end="url(#dg-arrow)"/>
+<rect class="box" x="80" y="536" width="320" height="176" rx="8"/>
+<text class="t-name" x="240" y="612" text-anchor="middle">Same code</text>
+<text class="t-code" x="240" y="660" text-anchor="middle">MBPP task 180</text>
+<rect class="box" x="480" y="320" width="440" height="176" rx="8"/>
+<text class="t-name" x="512" y="400">Apple libm</text>
+<text class="t-small" x="512" y="448">iPhone, Safari, Mac</text>
+<rect class="box" x="480" y="536" width="440" height="176" rx="8"/>
+<text class="t-name" x="512" y="616">Linux glibc</text>
+<text class="t-small" x="512" y="664">servers and CI</text>
+<rect class="box" x="480" y="752" width="440" height="176" rx="8"/>
+<text class="t-name" x="512" y="832">V8 fdlibm</text>
+<text class="t-small" x="512" y="880">Chrome, Android, Node</text>
+<rect class="box" x="1000" y="320" width="480" height="176" rx="8"/>
+<text class="t-mono" x="1024" y="400">12179.37204131742<tspan class="d-fail">7</tspan></text>
+<text class="t-small" x="1024" y="448">1 ulp below the key</text>
+<rect class="box" x="1000" y="536" width="480" height="176" rx="8"/>
+<text class="t-mono" x="1024" y="616">12179.37204131742<tspan class="d-pass">9</tspan></text>
+<text class="t-small" x="1024" y="664">matches the key</text>
+<rect class="box" x="1000" y="752" width="480" height="176" rx="8"/>
+<text class="t-mono" x="1024" y="832">12179.37204131742<tspan class="d-pass">9</tspan></text>
+<text class="t-small" x="1024" y="880">matches the key</text>
+<rect class="box-fail" x="1560" y="320" width="280" height="176" rx="8"/>
+<text class="v-fail" x="1700" y="428" text-anchor="middle">FAIL</text>
+<rect class="box-pass" x="1560" y="536" width="280" height="176" rx="8"/>
+<text class="v-pass" x="1700" y="644" text-anchor="middle">PASS</text>
+<rect class="box-pass" x="1560" y="752" width="280" height="176" rx="8"/>
+<text class="v-pass" x="1700" y="860" text-anchor="middle">PASS</text>
+<line class="hair" x1="80" y1="968" x2="1840" y2="968"/>
+<text class="t-small" x="80" y="1032">Not the chip: x86 Python under Rosetta prints the same 7.</text>
+<text class="t-small" x="1840" y="1032" text-anchor="end">1 ulp here = 1.8 nanometers</text>
+</svg>

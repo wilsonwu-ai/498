@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>498/500: live tally</title>
+<style>
+  :root {
+    --bg: #0b0d10; --panel: #141820; --ink: #f2f4f7; --muted: #9aa4b2; --line: #262c36;
+    --fail: #ff5252; --pass: #3ddc84; --key: #6cb4ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
+  body { font: clamp(20px, 1.6vw, 32px)/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  .wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr); gap: 2.2vw; height: 100vh; padding: 2.4vw 2.6vw; }
+  .left { display: flex; flex-direction: column; gap: 1.2vw; min-width: 0; }
+  h1 { font-size: clamp(32px, 3vw, 64px); line-height: 1.02; margin: 0; font-weight: 900; letter-spacing: -.02em; }
+  .url { font: 700 clamp(24px, 2vw, 44px)/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--key); word-break: break-all; }
+  .qr { background: #fff; border-radius: 1.2vw; padding: 1.2vw; width: min(100%, 52vh); aspect-ratio: 1; }
+  .qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  .hint { color: var(--muted); }
+  .right { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1.4vw; min-width: 0; min-height: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; }
+  .col { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: 1.4vw 1.6vw; min-width: 0; }
+  .col.fail { border-color: rgba(255,82,82,.55); } .col.pass { border-color: rgba(61,220,132,.55); }
+  .col .label { font-weight: 800; letter-spacing: .02em; }
+  .col.fail .label { color: var(--fail); } .col.pass .label { color: var(--pass); }
+  .n { font-weight: 900; font-size: clamp(80px, min(10vw, 17vh), 220px); line-height: .95; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
+  .col.fail .n { color: var(--fail); } .col.pass .n { color: var(--pass); }
+  .chips { display: flex; flex-wrap: wrap; gap: .6vw; margin-top: .8vw; min-height: 2.2em; }
+  .chip { background: #1e2430; border-radius: 999px; padding: .15em .7em; font-weight: 650; white-space: nowrap; }
+  .sub { color: var(--muted); margin-top: .6vw; }
+  .grids { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; min-height: 0; }
+  .g { background: var(--panel); border: 2px solid var(--line); border-radius: 1.2vw; padding: 1vw 1.2vw; display: flex; flex-direction: column; min-height: 0; }
+  .g .t { font-weight: 800; display: flex; justify-content: space-between; gap: 1em; }
+  .g svg { flex: 1 1 0; width: 100%; min-height: 0; }
+  .bar { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: .8em; }
+  .dot { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: #666; margin-right: .4em; vertical-align: middle; }
+  .dot.live { background: var(--pass); box-shadow: 0 0 12px var(--pass); }
+  .dot.down { background: var(--fail); }
+  #rehearsal { display: none; position: fixed; top: 0; left: 0; right: 0; background: #b8860b; color: #000; text-align: center; font-weight: 900; padding: .3em; z-index: 9; }
+  #overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 8; align-items: center; justify-content: center; padding: 3vw; }
+  #overlay img { max-width: 100%; max-height: 100%; }
+  #offline { display: none; position: fixed; inset: auto 0 0 0; background: var(--fail); color: #fff; font-weight: 900; text-align: center; padding: .5em; font-size: 1.3em; z-index: 7; }
+</style>
+</head>
+<body>
+<div id="rehearsal">REHEARSAL: SIMULATED DATA, NOT REAL PHONES (press S to stop)</div>
+<div id="offline">Tally offline. Raise your hand if your phone says FAIL.</div>
+<div id="overlay"><img src="diagram.svg" alt="Same code, three math libraries, three verdicts"></div>
+
+<div class="wrap">
+  <section class="left">
+    <h1>Your phone is an<br>MBPP grader</h1>
+    <div class="qr"><img src="qr.svg" alt="QR code for the grader page"></div>
+    <div class="url">wilsonwu-ai.github.io/498</div>
+    <div class="hint">Scan it. Your phone runs two benchmark problems with its own math library and grades itself against the answer key.</div>
+  </section>
+
+  <section class="right">
+    <div class="cols">
+      <div class="col fail">
+        <div class="label">FAIL &middot; disagrees with the key</div>
+        <div class="n" id="nFail">0</div>
+        <div class="chips" id="cFail"></div>
+        <div class="sub" id="sFail"></div>
+      </div>
+      <div class="col pass">
+        <div class="label">PASS &middot; matches the key</div>
+        <div class="n" id="nPass">0</div>
+        <div class="chips" id="cPass"></div>
+        <div class="sub" id="sPass"></div>
+      </div>
+    </div>
+
+    <div class="grids">
+      <div class="g">
+        <div class="t"><span>Answer key</span><span id="hKey" style="color:var(--key)"></span></div>
+        <svg id="gKey" viewBox="0 0 100 100"></svg>
+      </div>
+      <div class="g">
+        <div class="t"><span id="hMineLbl">This laptop</span><span id="hMine"></span></div>
+        <svg id="gMine" viewBox="0 0 100 100"></svg>
+      </div>
+    </div>
+
+    <div class="bar">
+      <span><span class="dot" id="dot"></span><span id="conn">connecting</span></span>
+      <span id="hexStat"></span>
+      <span>R reset &middot; D diagram &middot; F fullscreen</span>
+    </div>
+  </section>
+</div>
+
+<script src="probe.js"></script>
+<script>
+(function () {
+  var TOPIC = 'wilsonwu-498-7d03e585';              // must match index.html
+  var DEVICES = ['iPhone', 'iPad', 'Android', 'Mac', 'Windows', 'ChromeOS', 'Linux', 'Other'];
+  var LIBMS = ['apple', 'fdlibm/glibc', 'other'];
+  var reports = {};                                   // device id -> latest valid report
+  var sim = null, es = null, lastBeat = 0;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function int(x, lo, hi) { return typeof x === 'number' && x % 1 === 0 && x >= lo && x <= hi; }
+
+  // Anyone can post to a public topic, so only well-formed reports are counted.
+  function valid(m) {
+    return m && m.v === 1 && typeof m.id === 'string' && /^[a-z0-9]{4,16}$/.test(m.id) &&
+      DEVICES.indexOf(m.d) >= 0 && LIBMS.indexOf(m.l) >= 0 && typeof m.b === 'string' && m.b.length <= 24 &&
+      int(m.p180, 0, 3) && int(m.p493, 0, 3) && int(m.hx, 0, 40) && typeof m.ok === 'boolean' &&
+      m.ok === (m.p180 === 3 && m.p493 === 3);
+  }
+
+  function render() {
+    var all = Object.keys(reports).map(function (k) { return reports[k]; });
+    var fail = all.filter(function (r) { return !r.ok; }), pass = all.filter(function (r) { return r.ok; });
+    $('nFail').textContent = fail.length; $('nPass').textContent = pass.length;
+    function chips(list) {
+      var by = {};
+      list.forEach(function (r) { var k = r.d === 'Mac' || r.d === 'Windows' || r.d === 'Linux' ? r.d + ' ' + r.b : r.d; by[k] = (by[k] || 0) + 1; });
+      return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })
+        .map(function (k) { return '<span class="chip">' + esc(k) + ' ' + by[k] + '</span>'; }).join('');
+    }
+    $('cFail').innerHTML = chips(fail); $('cPass').innerHTML = chips(pass);
+    var failApple = fail.filter(function (r) { return r.l === 'apple'; }).length;
+    var passApple = pass.filter(function (r) { return r.l === 'apple'; }).length;
+    $('sFail').textContent = fail.length ? failApple + ' of ' + fail.length + " use Apple's math library" : '';
+    $('sPass').textContent = pass.length ? (pass.length - passApple) + ' of ' + pass.length + ' use a different math library' : '';
+    var hx = {};
+    all.forEach(function (r) { hx[r.hx] = (hx[r.hx] || 0) + 1; });
+    $('hexStat').textContent = Object.keys(hx).sort().map(function (k) { return hx[k] + ' drew ' + k + ' hexagons'; }).join(' · ');
+  }
+
+  function ingest(m) {
+    if (!valid(m)) return;
+    reports[m.id] = m;
+    render();
+  }
+
+  // ---- live tally over ntfy.sh server-sent events ----
+  function since() {
+    try { return localStorage.getItem('mbpp498since') || '12h'; } catch (e) { return '12h'; }
+  }
+  function connect() {
+    if (es) es.close();
+    if (!window.EventSource) { status('down', 'no EventSource'); return; }
+    es = new EventSource('https://ntfy.sh/' + TOPIC + '/sse?since=' + encodeURIComponent(since()));
+    status('', 'connecting');
+    function alive() { lastBeat = Date.now(); status('live', 'live'); }
+    es.onopen = alive;
+    // ntfy sends "open" and "keepalive" as named SSE events, which onmessage never sees.
+    es.addEventListener('open', alive);
+    es.addEventListener('keepalive', alive);
+    es.onmessage = function (e) {
+      alive();
+      var d; try { d = JSON.parse(e.data); } catch (x) { return; }
+      if (d.event !== 'message' || sim) return;
+      var m; try { m = JSON.parse(d.message); } catch (x) { return; }
+      ingest(m);
+    };
+    es.onerror = function () { status('down', 'reconnecting'); };
+  }
+  var downSince = 0;
+  function status(cls, text) {
+    $('dot').className = 'dot ' + cls; $('conn').textContent = text;
+    if (cls !== 'down') { downSince = 0; $('offline').style.display = 'none'; }
+    else if (!downSince) downSince = Date.now();
+  }
+  // EventSource reconnects on its own; only tell the room to raise hands after 10s down.
+  setInterval(function () {
+    $('offline').style.display = downSince && !sim && Date.now() - downSince > 10000 ? 'block' : 'none';
+  }, 1000);
+
+  // ---- this laptop's own hexagon grid vs the answer key ----
+  function draw(svgId, grid, bounds, extraOf) {
+    function path(poly) { return poly.map(function (p, i) { return (i ? 'L' : 'M') + p[0] + ' ' + (-p[1]); }).join(' ') + 'Z'; }
+    function inKey(poly) { return extraOf.some(function (k) { return Math.abs(k[0][0] - poly[0][0]) < 1e-6 && Math.abs(k[0][1] - poly[0][1]) < 1e-6; }); }
+    var svg = $(svgId), out = '';
+    svg.setAttribute('viewBox', bounds.join(' '));
+    grid.forEach(function (poly) {
+      var extra = extraOf !== grid && !inKey(poly);
+      out += '<path d="' + path(poly) + '" fill="' + (extra ? 'rgba(255,82,82,.45)' : 'rgba(108,180,255,.18)') +
+             '" stroke="' + (extra ? '#ff5252' : '#6cb4ff') + '" stroke-width="' + (extra ? 3 : 1.5) + '" vector-effect="non-scaling-stroke"/>';
+    });
+    svg.innerHTML = out;
+  }
+  function grids() {
+    var key = MBPP.KEYS.k493[0].key, mine = MBPP.calculate_polygons.apply(null, MBPP.KEYS.k493[0].args);
+    var pts = [];
+    [key, mine].forEach(function (g) { g.forEach(function (poly) { poly.forEach(function (p) { pts.push(p); }); }); });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var pad = 1.5, b = [Math.min.apply(null, xs) - pad, -(Math.max.apply(null, ys) + pad),
+      Math.max.apply(null, xs) - Math.min.apply(null, xs) + 2 * pad, Math.max.apply(null, ys) - Math.min.apply(null, ys) + 2 * pad];
+    draw('gKey', key, b, key);
+    draw('gMine', mine, b, key);
+    $('hKey').textContent = key.length + ' hexagons';
+    $('hMine').textContent = mine.length + ' hexagons';
+    $('hMine').style.color = mine.length === key.length ? 'var(--pass)' : 'var(--fail)';
+    var ua = navigator.userAgent;
+    var br = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'this browser';
+    $('hMineLbl').textContent = 'This laptop (' + br + ')';
+  }
+
+  // ---- rehearsal simulator: loudly labelled, never mixed with real reports ----
+  function toggleSim() {
+    if (sim) { clearInterval(sim); sim = null; reports = {}; $('rehearsal').style.display = 'none'; connect(); render(); return; }
+    reports = {}; render();
+    $('rehearsal').style.display = 'block';
+    var mix = [['iPhone', 'Safari', 'apple', 12], ['iPhone', 'Chrome (iOS)', 'apple', 12], ['Android', 'Chrome', 'fdlibm/glibc', 10],
+               ['Android', 'Samsung Internet', 'fdlibm/glibc', 10], ['Mac', 'Safari', 'apple', 12], ['Mac', 'Chrome', 'fdlibm/glibc', 10]];
+    var w = [50, 8, 25, 5, 4, 8], n = 0;
+    sim = setInterval(function () {
+      if (n++ > 70) return;
+      var r = Math.random() * 100, i = 0; while (r > w[i]) { r -= w[i]; i++; }
+      var t = mix[i], ok = t[2] !== 'apple';
+      ingest({ v: 1, id: 'sim' + n, d: t[0], b: t[1], l: t[2], p180: ok ? 3 : 1, p493: ok ? 3 : 0, hx: t[3], ok: ok });
+    }, 350);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.key.toLowerCase();
+    if (k === 'r') {
+      try { localStorage.setItem('mbpp498since', String(Math.floor(Date.now() / 1000))); } catch (x) {}
+      reports = {}; render(); connect();
+    } else if (k === 'd') {
+      var o = $('overlay'); o.style.display = o.style.display === 'flex' ? 'none' : 'flex';
+    } else if (k === 'f') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      else document.exitFullscreen && document.exitFullscreen();
+    } else if (k === 's') {
+      toggleSim();
+    }
+  });
+  setInterval(function () { if (!sim && lastBeat && Date.now() - lastBeat > 75000) status('down', 'no heartbeat'); }, 5000);
+
+  grids(); render(); connect();
+})();
+</script>
+</body>
+</html>
